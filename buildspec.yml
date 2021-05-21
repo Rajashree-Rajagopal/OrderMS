@@ -18,10 +18,8 @@ phases:
       - aws configure set aws_access_key_id AKIA6E7IQ43GHK72NVPY
       - aws configure set aws_secret_access_key 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 
       - aws configure set default.region ap-south-1
-     #- aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/a4f4k7v3
-      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 972760868556.dkr.ecr.ap-south-1.amazonaws.com
-     #- REPOSITORY_URI=public.ecr.aws/a4f4k7v3/orderms-ecr
-      - REPOSITORY_URI=972760868556.dkr.ecr.ap-south-1.amazonaws.com/orderms-ecr-private
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/a4f4k7v3
+      - REPOSITORY_URI=public.ecr.aws/a4f4k7v3/ordermsecr
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
       - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip
@@ -38,15 +36,14 @@ phases:
       #- if [ $(jq -r '.projectStatus.status' result.json) = ERROR ] ; then $CODEBUILD_BUILD_SUCCEEDING -eq 0 ;fi
       - echo generating jar
       - echo building the docker image.....
-      - docker build -t orderms-ecr-private .
-      - docker tag orderms-ecr-private:latest 972760868556.dkr.ecr.ap-south-1.amazonaws.com/orderms-ecr-private:latest
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the docker images
-      - docker push 972760868556.dkr.ecr.ap-south-1.amazonaws.com/orderms-ecr-private:latest
-     #- docker push $REPOSITORY_URI:latest
-     #- docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
       - printf '[{"name":"userContainer","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
